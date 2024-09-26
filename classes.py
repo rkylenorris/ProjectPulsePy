@@ -47,11 +47,13 @@ class Task:
 
 class TaskList:
 
-    def __int__(self, project):
+    def __int__(self, project: str, is_personal: bool):
         self.project = project
+        self.personal = is_personal
         self.last_modified_by: str = None
         self.last_modified: datetime = None
         self.tasks = []
+        self.set_last_modified()
 
     def set_last_modified(self) -> None:
         self.last_modified_by = getpass.getuser()
@@ -59,6 +61,8 @@ class TaskList:
 
     def add_task(self, task_item: Task) -> None:
         self.tasks.append(task_item)
+        # TODO code to handle sql insert statement for new task
+        self.set_last_modified()
 
     def get_tasks(self) -> list[Task]:
         return self.tasks
