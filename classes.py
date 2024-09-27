@@ -1,10 +1,12 @@
 import getpass
-from datetime import datetime
+from datetime import datetime, date
+from sql_comands import convert_tasks_to_df, load_df_to_sqlite
+from enum import Enum
+import pandas as pd
 
 
 class Task:
-
-    def __int__(self, project: str, title: str, description: str, priority: int, category: str, reference_path: str):
+    def __init__(self, project: str, title: str, description: str, priority: int, category: str, reference_path: str):
         self.logic_del = 0
         self.project = project
         self.title = title
@@ -45,30 +47,56 @@ class Task:
         else:
             return False
 
-class TaskList:
 
-    def __int__(self, project: str, is_personal: bool):
-        self.project = project
-        self.personal = is_personal
+class ProjectKind(Enum):
+    PERSONAL = "Personal"
+    PROFESSIONAL = "Professional"
+
+
+class Project:
+
+    def __init__(self, project_name: str, project_url: str, project_desc: str, kind: ProjectKind, start: date, projected_end: date):
+        self.name: str = project_name
+        self.description: str = project_desc
+        self.url: str = project_url
+        self.kind: ProjectKind = kind
+        self.created: date = datetime.now()
+        self.start_date: date = start
+        self.projected_end: date = projected_end
+        self.actual_end: date = None
         self.last_modified_by: str = None
         self.last_modified: datetime = None
-        self.tasks = []
+        self.task_list: list = []
         self.set_last_modified()
+        self.proj_table_name = self.name.lower() + '-proj'
+        self.task_list_table_name = self.name.lower() + '-task_list'
 
     def set_last_modified(self) -> None:
         self.last_modified_by = getpass.getuser()
         self.last_modified = datetime.now()
 
     def add_task(self, task_item: Task) -> None:
-        self.tasks.append(task_item)
-        # TODO code to handle sql insert statement for new task
+        self.task_list.append(task_item)
+        self.load_tasks_to_db()
         self.set_last_modified()
 
+    def add_tasks(self, tasks: list[Task]):
+        for task in tasks:
+            self.task_list.append(task)
+        self.load_tasks_to_db()
+
     def get_tasks(self) -> list[Task]:
-        return self.tasks
+        return self.task_list
 
     def get_tasks_by_assigned(self, assigned_username) -> list[Task]:
-        return [task for task in self.tasks if task.logic_del == 0 and task.assigned_to == assigned_username]
+        return [task for task in self.task_list if task.logic_del == 0 and task.assigned_to == assigned_username]
 
+    def load_tasks_to_db(self):
+        task_df = convert_tasks_to_df(self.task_list)
+        load_df_to_sqlite(task_df, "projects.db", self.task_list_table_name)
+
+    def load_proj_info_to_db(self):
+        proj_df = pd.DataFrame(self.__dict__)
+        load_df_to_sqlite(proj_df, "projects.db", self.task_list_table_name)
 
 
