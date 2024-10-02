@@ -21,6 +21,7 @@ class Task:
         self.last_modified = datetime.now()
         self.completed = False
         self.due_by: datetime = None
+        self.task_list_table_name = self.project.lower() + '-task_list'
 
     def set_last_modified(self) -> None:
         self.last_modified_by = getpass.getuser()
@@ -28,15 +29,19 @@ class Task:
 
     def complete(self):
         self.completed = True
+        self.load_task_to_db()
 
     def delete(self):
         self.logic_del = 1
+        self.load_task_to_db()
 
     def set_due_by(self, date: datetime):
         self.due_by = date
+        self.load_task_to_db()
 
     def update_title(self, new_title: str):
         self.title = new_title
+        self.load_task_to_db()
 
     def is_overdue(self) -> bool:
         if self.due_by is None:
@@ -47,6 +52,11 @@ class Task:
         else:
             return False
 
+    def load_task_to_db(self):
+        self.set_last_modified()
+        task_df = convert_tasks_to_df([self])
+        load_df_to_sqlite(task_df, "projects.db", self.task_list_table_name)
+
 
 class ProjectKind(Enum):
     PERSONAL = "Personal"
@@ -55,7 +65,8 @@ class ProjectKind(Enum):
 
 class Project:
 
-    def __init__(self, project_name: str, project_url: str, project_desc: str, kind: ProjectKind, start: date, projected_end: date):
+    def __init__(self, project_id: int, project_name: str, project_url: str, project_desc: str, kind: ProjectKind, start: date, projected_end: date):
+        self.id = project_id
         self.name: str = project_name
         self.description: str = project_desc
         self.url: str = project_url
