@@ -1,5 +1,4 @@
-from sql_comands import convert_tasks_to_df
-from classes import Task
+from classes import Task, convert_tasks_to_df
 
 # project: str, title: str, description: str,
 # priority: int, category: str,
